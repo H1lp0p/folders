@@ -1,66 +1,52 @@
-import React, {useContext} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import logo from './logo.svg';
 import './App.css';
-import axios from 'axios';
+import axios, {AxiosResponse} from 'axios';
 import {
   useQuery,
-  useMutation,
-  useQueryClient,
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query'
 
 import AuthForm from './forms/logInForm'
 
-import {AuthContext} from "./models/AuthorizationHandler";
-import AuthorizationHandler from "./models/AuthorizationHandler";
+import {AuthContext} from "./components/AuthorizationHandler";
+import AuthorizationHandler from "./components/AuthorizationHandler";
+import PlaceHolder from "./components/PlaceHolder";
+import MainPlate from "./components/MainPlate";
+import {Button} from "@mui/material";
+import Header from "./components/Header";
 
 const url = "http://212.113.102.189:7000/"
 
 function App() {
-
   const client = new QueryClient();
+
+  const {isAuthorized, setIsAuthorized} = useContext(AuthContext);
+
+    useEffect(() => {
+        console.log("updated");
+    }, [isAuthorized]);
 
   return (
     <div className="App">
         <AuthorizationHandler>
-            <p>
-                Edit <code>src/App.tsx</code> and save to reload.
-            </p>
             <QueryClientProvider client={client}>
-                {useContext(AuthContext).isAuthorized ? <Test/> : <AuthForm/>}
+                <AuthForm closeFunc={(b:boolean)=> {
+                    setIsAuthorized(b)}}/>
+                <AuthContext.Consumer>
+                    {(value)=> (
+                        <div>
+                            <Header logOut={value.logOut} userName={localStorage.getItem("username")}></Header>
+                            {value.isAuthorized ? <MainPlate/> : null}
+                        </div>
+
+                    )}
+                </AuthContext.Consumer>
             </QueryClientProvider>
         </AuthorizationHandler>
     </div>
   );
-}
-
-
-function Test() {
-    const request = {
-        method: "GET",
-        body:
-            JSON.stringify({
-                "login": "test-1",
-                "password": "test-1",
-            })
-    }
-    const {isLoading, error, data} = useQuery({
-    queryKey: ["test"],
-    queryFn: () => axios.post(url + "auth/register", {"login":"test-1", "password":"test-1"}),
-  })
-
-  if(isLoading){
-    return <h1>Loading...</h1>
-  }
-
-  if(error){
-    return <h1>Error {error.message}</h1>
-  }
-
-  return(
-      <h1>{data?.data.token}</h1>
-  )
 }
 
 export default App;
