@@ -25,7 +25,6 @@ function App() {
   const {isAuthorized, setIsAuthorized} = useContext(AuthContext);
 
     useEffect(() => {
-        console.log("updated");
     }, [isAuthorized]);
 
   return (

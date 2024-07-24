@@ -24,7 +24,6 @@ function AuthorizationHandler({ children } : Props) {
         if (localToken !== null) {
             setToken(localToken);
             setIsAuthorized(true);
-            console.log("context",localToken, isAuthorized);
         }
     }, [token])
 
@@ -34,12 +33,18 @@ function AuthorizationHandler({ children } : Props) {
         localStorage.setItem("dir", "root");
         localStorage.setItem("username", newUsername);
         localStorage.setItem("token", newToken);
+
+        localStorage.setItem("path", "root");
+        localStorage.setItem("nowDir", "root");
     }
 
     function logOut(){
         localStorage.removeItem("token");
         localStorage.removeItem("username");
         localStorage.removeItem("dir");
+
+        localStorage.removeItem("path");
+        localStorage.removeItem("nowDir");
         setIsAuthorized(false);
         setToken("");
         console.log("logOut")

@@ -5,7 +5,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 const url = "http://212.113.102.189:7000/"
-localStorage.setItem("apiUrl", url)
+localStorage.setItem("apiUrl", url);
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

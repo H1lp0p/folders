@@ -18,7 +18,7 @@ function AuthForm({closeFunc} : any){
     const {register, handleSubmit} = useForm<IFormInput>();
 
 
-    const useData : SubmitHandler<IFormInput> = (formData) => {
+    const getData : SubmitHandler<IFormInput> = (formData) => {
         if (formData.login !== "" && formData.password !== ""){
             const apiUrl = localStorage.getItem("apiUrl")! + (isRegister? "auth/register" : "auth/login");
             const data = axios.post(apiUrl, formData)
@@ -51,7 +51,7 @@ function AuthForm({closeFunc} : any){
         style={{justifyContent: "center", alignItems: "center", display: "flex"}}>
             <Paper elevation={2} style={{display: "block", alignItems: "center", justifyItems: "center", padding: "16px"}}>
                 <label><h1>Вход и регистрация</h1></label>
-                <form id="AuthForm" onSubmit={handleSubmit(useData)} style={{display: "grid", alignItems: "center", gap: "8px"}}>
+                <form id="AuthForm" onSubmit={handleSubmit(getData)} style={{display: "grid", alignItems: "center", gap: "8px"}}>
                     <FormControl defaultValue="Имя" required={true}>
                         <InputLabel>Логин</InputLabel>
                         <Input {...register("login")}></Input>
