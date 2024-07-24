@@ -19,14 +19,14 @@ export type elementProps = {
 
 function Object(prop : elementProps) {
 
-    const {goTo, setIsModalOpen, changeFocusElement} = useContext(FileContext);
+    const {goTo, changeFocusElement} = useContext(FileContext);
 
     const {element, parentId} = prop
 
     var self = useRef<ElementType>(null);
 
     function onFocus(){
-        changeFocusElement(element);
+        changeFocusElement({element: element, parentId: parentId});
     }
 
     return (
@@ -41,8 +41,12 @@ function Object(prop : elementProps) {
         >
             <CardActionArea
                 onFocus={onFocus}
-                onDoubleClick={() => {goTo(element.id)}}
-                onClick={(e) => {}}
+                onDoubleClick={ () => {
+                    if (element.type === "folder"){
+                        console.log("goto", element.id);
+                        goTo(element.id);
+                }}
+            }
             >
                 <CardMedia>
                     <Box component="img"

@@ -3,6 +3,8 @@ import {useContext, useState} from "react";
 import {Button, FormControl, Input, InputLabel, Modal, Paper} from "@mui/material";
 import {SubmitHandler, useForm} from "react-hook-form"
 import axios, {AxiosResponse} from "axios";
+import {Simulate} from "react-dom/test-utils";
+import error = Simulate.error;
 
 interface IFormInput {
     login: string,
@@ -21,10 +23,15 @@ function AuthForm({closeFunc} : any){
     const getData : SubmitHandler<IFormInput> = (formData) => {
         if (formData.login !== "" && formData.password !== ""){
             const apiUrl = localStorage.getItem("apiUrl")! + (isRegister? "auth/register" : "auth/login");
-            const data = axios.post(apiUrl, formData)
-            data.then((response: AxiosResponse) =>{
-                AuthData.logIn(response.data.token, formData["login"])
-            })
+            try {
+                const data = axios.post(apiUrl, formData)
+                data.then((response: AxiosResponse) =>{
+                    AuthData.logIn(response.data.token, formData["login"])
+                });
+            }
+            catch (error) {
+                console.log("error", error);
+            }
             closeFunc(true);
         }
     }
@@ -50,7 +57,7 @@ function AuthForm({closeFunc} : any){
         open = {!AuthData.isAuthorized}
         style={{justifyContent: "center", alignItems: "center", display: "flex"}}>
             <Paper elevation={2} style={{display: "block", alignItems: "center", justifyItems: "center", padding: "16px"}}>
-                <label><h1>Вход и регистрация</h1></label>
+                <label><h1>Log in or sign up</h1></label>
                 <form id="AuthForm" onSubmit={handleSubmit(getData)} style={{display: "grid", alignItems: "center", gap: "8px"}}>
                     <FormControl defaultValue="Имя" required={true}>
                         <InputLabel>Логин</InputLabel>
@@ -63,8 +70,8 @@ function AuthForm({closeFunc} : any){
                     <Input id="formSubmit" type="submit" style={{display: "none"}}></Input>
                 </form>
                 <div style={{justifyContent: "center", marginTop: "8px"}}>
-                    <Button variant="contained" style={{marginRight: "8px"} } onClick={handleLogIn}>LogIn</Button>
-                    <Button variant="outlined" onClick={handleRegister}>Register</Button>
+                    <Button variant="contained" style={{marginRight: "8px"} } onClick={handleLogIn}>Log in</Button>
+                    <Button variant="outlined" onClick={handleRegister}>Sign up</Button>
                 </div>
             </Paper>
         </Modal>

@@ -1,7 +1,8 @@
-import {Button, Icon, IconButton, Paper, styled, Card} from "@mui/material";
+import {Button, styled} from "@mui/material";
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
-import {useEffect, useState} from "react";
+import {useContext} from "react";
+import {FileContext, ModalStates} from "./DirectoryHandler";
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -19,14 +20,13 @@ function addFileComponent({addFile, addFolder} : any) {
     return (
         <div>
             <Button
-                onClick={(e) => {addFile();}}
+                onClick={() => {addFile()}}
                 component="label"
                 variant="outlined"
                 endIcon={<NoteAddIcon/>} size="large"
                 sx={{marginRight: "8px"}}
             >
                 Add
-                <VisuallyHiddenInput type="file"/>
             </Button>
             <Button
                 onClick={(e) => {addFolder()}}

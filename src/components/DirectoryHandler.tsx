@@ -2,12 +2,17 @@ import {createContext, Dispatch, ReactNode, SetStateAction, useContext, useEffec
 import {useQuery} from "@tanstack/react-query";
 import axios, {AxiosResponse} from "axios";
 import AddFileComponent from "./addFileComponent";
-import {Grid, Box, Toolbar, Button} from "@mui/material";
+import {Grid, Box, Button} from "@mui/material";
 import Object, {ElementType, elementProps} from "./File"
 import {blue} from "@mui/material/colors";
 import {AuthContext} from "./AuthorizationHandler";
 import {unstable_batchedUpdates} from "react-dom";
-import Redact from "../forms/ObjectRedactor";
+import Redact from "../forms/FolderEdit";
+import Tools from "./ToolBar";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import AddFolder from "../forms/AddFolderModal";
+import DeleteSubmit from "../forms/DeleteSubmit";
+import AddFileModal from "../forms/AddFileModal";
 
 export type FileContext = {
     nowDirId: string,
@@ -19,34 +24,31 @@ export type FileContext = {
     deleteFile: (fileId: string) => void,
     goTo: (folderId: string) => void,
     goUp: () => void,
-    focusElement: ElementType | null,
-    changeFocusElement: (el: ElementType) => void,
-    isModalOpen: boolean,
-    setIsModalOpen: Dispatch<SetStateAction<boolean>>
+    focusElement: El | null,
+    changeFocusElement: (el: El) => void,
+    modalState: ModalStates,
+    setModalState: Dispatch<SetStateAction<ModalStates>>
 }
 
-export const useFocus = () => {
-    const [active, setActive] = useState(document.activeElement);
-    const handleFocus = (e : Event) => {
-        setActive(document.activeElement);
-    }
+export enum ModalStates {
+    none = "none",
+    edit = "edit",
+    delete = "delete",
+    add = "add",
+    addFile = "addFile"
+}
 
-    useEffect(() => {
-        document.addEventListener("focus", handleFocus);
-
-        return () => {
-            document.removeEventListener("focus", handleFocus);
-        }
-    }, []);
-
-    return active;
+interface El{
+    element: ElementType,
+    parentId: string
 }
 
 function FilesArray(){
     const [nowDirId, setNowDirId] = useState<string>('root');
     const [rerender, setRerender] = useState<boolean>(false);
-    const [focusElement, changeFocusElement ] = useState<ElementType|null>(null);
-    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const [focusElement, changeFocusElement ] = useState<El|null>(null);
+    const [modalState, setModalState] = useState<ModalStates>(ModalStates.none);
+    var additionalKey = useRef(0);
 
     const {token} = useContext(AuthContext);
 
@@ -62,8 +64,13 @@ function FilesArray(){
     }
 
     useEffect(() => {
-        console.log('focus ', focusElement?.name)
-    }, [focusElement]);
+        console.log("----------", localStorage.getItem("path"))
+        console.log(data);
+    }, []);
+
+    useEffect(() => {
+        changeFocusElement(null);
+    }, [rerender]);
 
     useEffect(() => {
         path = localStorage.getItem("path")!.split('/');
@@ -75,35 +82,51 @@ function FilesArray(){
 
     const filePath = localStorage.getItem("apiUrl") + "drive/files";
 
+
+    var {isLoading, data, error} = useQuery({
+        queryKey: ['getFolder', nowDirId, additionalKey.current],
+        queryFn: async () => {
+            const {data} = await axios.get(folderPath + `/${nowDirId}`, config);
+            return data.data },
+    });
     function goTo(folderId : string){
         localStorage.setItem("path", localStorage.getItem("path") + `/${folderId}`);
+        console.log("goto", localStorage.getItem("path"))
         setNowDirId(folderId);
-    }
 
+    }
     function goUp(){
         if (localStorage.getItem("path") != "root"){
+            console.log(localStorage.getItem("path"));
             const nowPath = localStorage.getItem("path")!.split('/');
             nowPath.pop();
+            console.log(nowPath);
             localStorage.setItem("path", nowPath.join("/"));
             setNowDirId(nowPath[nowPath.length - 1]);
         }
-    }
 
+    }
     //TODO: test
     function addFile(file : File){
-        const data = {
-            folderId: nowDirId,
-            file: file
-        };
-        const request = axios.post(filePath, data, config).catch((error) => {
-            console.log("addFile", error, requestHeader);
-        });
-        setRerender(!rerender);
-    }
+        const fData = new FormData()
+        fData.append("folderId", data.id);
+        fData.append("file", file);
 
+        const request = axios.post(filePath, fData, {
+            headers:{
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data'
+            }
+        }).catch((error) => {
+            console.log("addFile", error, requestHeader);
+        }).then(() => {
+            additionalKey.current++;
+            setRerender(!rerender);
+        });
+
+    }
     //TODO: test
-    function addFolder(folderName: string = "newFolder") {
-        console.log("addFolder", folderName);
+    function addFolder(folderName : string = "newFolder") {
         const data = {
             "parentId" : nowDirId,
             "name" : folderName,
@@ -113,38 +136,47 @@ function FilesArray(){
             //setElements([...elements, {id: newFolder.id, type: "folder", name: newFolder.name}])
         }).catch((error) => {
             console.log("addFolder", error, requestHeader);
+        }).then(() => {
+            additionalKey.current ++;
+            setRerender(!rerender);
         });
-        setRerender(!rerender);
-    }
 
+    }
     //TODO: test
     function editFolder(folderId: string, newName: string, newParentId: string) {
+        console.log("editFolderFunc got")
         const data = {
             parentId: newParentId,
             name: newName,
         };
-        const response = axios.patch(folderPath + `/${nowDirId}`, data, config).catch((error) => {
+        const response = axios.patch(folderPath + `/${folderId}`, data, config)
+            .catch((error) => {
             console.log("editFolder", error, requestHeader);
         });
+        console.log(response);
+        additionalKey.current ++;
         //setNowDirId(nowDirId);
-    }
 
+    }
     //TODO: test
     function deleteFolder(folderId: string){
-        const response = axios.delete(folderPath + folderId, config).catch((error) => {
+        const response = axios.delete(folderPath + `/${folderId}`, config).catch((error) => {
             console.log("deleteFolder", error, requestHeader);
+        }).then(() => {
+            additionalKey.current++;
+            setRerender(!rerender);
         });
-        //setNowDirId(nowDirId);
-    }
 
+    }
     //TODO: test
     function deleteFile(fileId: string) {
         const presonse = axios.delete(filePath + `/${fileId}`, config).catch((error) => {
             console.log("deleteFile", error, requestHeader);
         });
-        //setNowDirId(nowDirId);
-    }
+        additionalKey.current++;
+        setRerender(!rerender);
 
+    }
     const value = {
         nowDirId,
         setNowDirId,
@@ -157,52 +189,75 @@ function FilesArray(){
         goUp,
         focusElement,
         changeFocusElement,
-        isModalOpen,
-        setIsModalOpen,
+        modalState,
+        setModalState,
     }
 
-    var {isLoading, data, error} = useQuery({
-        queryKey: ['getFolder', nowDirId],
-        queryFn: async () => {
-            console.log("nowDir", nowDirId);
-            console.log("last path", path[path.length - 1]);
-            const {data} = await axios.get(folderPath + `/${nowDirId}`, config);
-            return data.data },
-    });
-
     if(!isLoading){
-        console.log(data);
         const children = data.children as {}[];
         return (
             <FileContext.Provider value={value}>
                 <Redact/>
-                <Toolbar>
+                <AddFolder/>
+                <AddFileModal/>
+                <DeleteSubmit/>
+                <Tools>
                     <Button onClick={goUp}> back </Button>
-                    <h1>{data.name}</h1>
-                    <AddFileComponent addFile={addFile} addFolder={addFolder}/>
+                    {focusElement != null ? (
+                        <div>
+                            {(focusElement!.element.type === "folder") && (
+                                <Button onClick={() => {
+                                    setModalState(ModalStates.edit)
+                                }}>
+                                    Edit
+                                </Button>
+                            )}
+                            <Button
+                                variant={"outlined"}
+                                onClick={() => {setModalState(ModalStates.delete)}}
+                                endIcon={<DeleteForeverIcon/>} size="large">
+                                Delete
+                            </Button>
+                        </div>) : null
+                    }
 
-                </Toolbar>
-                <Grid
-                    margin="8px"
-                    container
-                    spacing={0.5}
-                    justifyContent="center"
-                    alignItems="center"
-                    gap="8px"
+                </Tools>
+                <AddFileComponent addFile={() => {setModalState(ModalStates.addFile)}}
+                                  addFolder={() => {setModalState(ModalStates.add)}}/>
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        margin: "8px",
+                        justifyContent: "center",
+                        alignItems: "center"
+                }}
                 >
 
-                    {children.map((el : {}, ind) => {
-                        console.log((el as ElementType).id);
+                    {children.map((el: {}, ind) => {
                         return (
-                            <Grid item xs={1} key={(el as ElementType).id}>
+                            <div key={(el as ElementType).id} style={{margin: "16px"}}>
                                 <Object element={el as ElementType} parentId={nowDirId}/>
-                            </Grid>);
+                            </div>);
                     })}
-                </Grid>
+                </Box>
+
+                <h1
+                    style={{
+                        userSelect: "none",
+                        opacity: "10%",
+                        fontSize: "600%",
+                        position: "fixed",
+                        bottom: "1vh",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)"
+                    }}
+                >
+                    {data.name}
+                </h1>
             </FileContext.Provider>
         )
-    }
-    else{
+    } else {
         return <h1>Loading...</h1>
     }
 }
@@ -218,9 +273,9 @@ export const FileContext = createContext<FileContext>({
     goTo: (folderId: string) => {},
     goUp: () => {},
     focusElement: null,
-    changeFocusElement: (el: ElementType) => {},
-    isModalOpen: false,
-    setIsModalOpen: () => {}
+    changeFocusElement: (el: El) => {},
+    modalState: ModalStates.none,
+    setModalState: () => {}
 });
 
 export default FilesArray;

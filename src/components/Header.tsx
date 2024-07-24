@@ -1,5 +1,6 @@
 import {useContext} from "react";
 import {AppBar, Button, Typography} from "@mui/material";
+import ToolBar from "./ToolBar";
 
 type HeaderProps = {
     logOut: () => void,
@@ -9,10 +10,12 @@ type HeaderProps = {
 function Header({logOut, userName} : HeaderProps ){
     return (
         <AppBar position="static" sx={{display: "inline-flex"}}>
-            <Typography variant="h6">{userName !== null? userName : "Guest"}</Typography>
-            <Button color="inherit" onClick={() => logOut()}>
-                Log out
-            </Button>
+            <ToolBar>
+                <Typography variant="h6">{userName !== null? userName : "Guest"}</Typography>
+                <Button color="inherit" onClick={() => logOut()}>
+                    Log out
+                </Button>
+            </ToolBar>
         </AppBar>
     )
 }
