@@ -108,7 +108,7 @@ function FilesArray(){
         }
 
     }
-    //TODO: test
+
     function addFile(file : File){
         const fData = new FormData()
         fData.append("folderId", data.id);
@@ -127,7 +127,7 @@ function FilesArray(){
         });
 
     }
-    //TODO: test
+
     function addFolder(folderName : string = "newFolder") {
         const data = {
             "parentId" : nowDirId,
@@ -144,7 +144,7 @@ function FilesArray(){
         });
 
     }
-    //TODO: test
+
     function editFolder(folderId: string, newName: string, newParentId: string) {
         console.log("editFolderFunc got")
         const data = {
@@ -160,7 +160,7 @@ function FilesArray(){
             });
 
     }
-    //TODO: test
+
     function deleteFolder(folderId: string){
         const response = axios.delete(folderPath + `/${folderId}`, config).catch((error) => {
             console.log("deleteFolder", error, requestHeader);
@@ -171,7 +171,7 @@ function FilesArray(){
         });
 
     }
-    //TODO: test
+
     function deleteFile(fileId: string) {
         const presonse = axios.delete(filePath + `/${fileId}`, config).catch((error) => {
             console.log("deleteFile", error, requestHeader);
