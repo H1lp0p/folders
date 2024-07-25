@@ -13,6 +13,7 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import AddFolder from "../forms/AddFolderModal";
 import DeleteSubmit from "../forms/DeleteSubmit";
 import AddFileModal from "../forms/AddFileModal";
+import FolderEdit from "../forms/FolderEdit";
 
 export type FileContext = {
     nowDirId: string,
@@ -27,7 +28,8 @@ export type FileContext = {
     focusElement: El | null,
     changeFocusElement: (el: El) => void,
     modalState: ModalStates,
-    setModalState: Dispatch<SetStateAction<ModalStates>>
+    setModalState: Dispatch<SetStateAction<ModalStates>>,
+    availableFolders: {folderId: string, folderName: string}[]
 }
 
 export enum ModalStates {
@@ -152,17 +154,18 @@ function FilesArray(){
         const response = axios.patch(folderPath + `/${folderId}`, data, config)
             .catch((error) => {
             console.log("editFolder", error, requestHeader);
-        });
-        console.log(response);
-        additionalKey.current ++;
-        //setNowDirId(nowDirId);
+        }).then(() => {
+                additionalKey.current ++;
+                setRerender(!rerender);
+            });
 
     }
     //TODO: test
     function deleteFolder(folderId: string){
         const response = axios.delete(folderPath + `/${folderId}`, config).catch((error) => {
             console.log("deleteFolder", error, requestHeader);
-        }).then(() => {
+        }).then((response) => {
+            console.log(response);
             additionalKey.current++;
             setRerender(!rerender);
         });
@@ -177,6 +180,14 @@ function FilesArray(){
         setRerender(!rerender);
 
     }
+
+    var availableFolders : {folderId: string, folderName: string}[] = [];
+    var parrentFolder = {
+        folderName: "...",
+        folderId: localStorage.getItem("path")!.split('/').length > 1?
+            localStorage.getItem("path")!.split('/')[localStorage.getItem("path")!.split('/').length-2] :
+            "root"}
+
     const value = {
         nowDirId,
         setNowDirId,
@@ -191,13 +202,20 @@ function FilesArray(){
         changeFocusElement,
         modalState,
         setModalState,
+        availableFolders
     }
 
     if(!isLoading){
         const children = data.children as {}[];
+        availableFolders = children.filter((el : {}) => {return (el as ElementType).type==="folder"})
+            .map((el) => {return {folderId: (el as ElementType).id, folderName: (el as ElementType).name!}})
+        if (nowDirId !== "root") {
+            availableFolders.push(parrentFolder);
+        }
+        availableFolders.push({folderId: data.id, folderName: data.name});
         return (
             <FileContext.Provider value={value}>
-                <Redact/>
+                <FolderEdit availableFolders={availableFolders}/>
                 <AddFolder/>
                 <AddFileModal/>
                 <DeleteSubmit/>
@@ -275,7 +293,8 @@ export const FileContext = createContext<FileContext>({
     focusElement: null,
     changeFocusElement: (el: El) => {},
     modalState: ModalStates.none,
-    setModalState: () => {}
+    setModalState: () => {},
+    availableFolders: []
 });
 
 export default FilesArray;
