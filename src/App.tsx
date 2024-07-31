@@ -1,5 +1,4 @@
 import React, {useContext, useEffect, useState} from 'react';
-import logo from './logo.svg';
 import './App.css';
 import axios, {AxiosResponse} from 'axios';
 import {
@@ -20,7 +19,18 @@ import Header from "./components/Header";
 const url = "http://212.113.102.189:7000/"
 
 function App() {
-  const client = new QueryClient();
+  const client = new QueryClient({
+      defaultOptions: {
+          mutations: {
+              retry: false,
+              networkMode: "always",
+          },
+          queries: {
+              retry: false,
+              networkMode: "always",
+          },
+      },
+  });
 
   const {isAuthorized, setIsAuthorized} = useContext(AuthContext);
 
